@@ -44,7 +44,13 @@ public class TicketService {
        //And the end return the ticketId that has come from db
 
         Train train = trainRepository.getOne(bookTicketEntryDto.getTrainId());
-        int leftTicket = train.getNoOfSeats() - train.getBookedTickets().size();
+
+        int bookedTicket = 0;
+        for(Ticket ticket : train.getBookedTickets()){
+            bookedTicket += ticket.getPassengersList().size();
+        }
+
+        int leftTicket = train.getNoOfSeats() - bookedTicket;
         if(leftTicket < bookTicketEntryDto.getNoOfSeats()) throw new Exception("Less tickets are available");
 
         String[] route = train.getRoute().split(",");
