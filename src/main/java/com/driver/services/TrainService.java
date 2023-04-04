@@ -26,7 +26,22 @@ public class TrainService {
         //and route String logic to be taken from the Problem statement.
         //Save the train and return the trainId that is generated from the database.
         //Avoid using the lombok library
-        return null;
+        Train train = new Train();
+        train.setDepartureTime(trainEntryDto.getDepartureTime());
+        train.setNoOfSeats(trainEntryDto.getNoOfSeats());
+
+        String route = "";
+        List<Station> stations = trainEntryDto.getStationRoute();
+        for(int i=0; i<stations.size(); i++){
+            if(i == stations.size()-1)  route += stations.get(i);
+            else  route += stations.get(i) + ",";
+        }
+
+        train.setRoute(route);
+
+        train = trainRepository.save(train);
+
+        return train.getTrainId();
     }
 
     public Integer calculateAvailableSeats(SeatAvailabilityEntryDto seatAvailabilityEntryDto){
@@ -39,8 +54,25 @@ public class TrainService {
         //even if that seat is booked post the destStation or before the boardingStation
         //Inshort : a train has totalNo of seats and there are tickets from and to different locations
         //We need to find out the available seats between the given 2 stations.
+        Train train = trainRepository.findById(seatAvailabilityEntryDto.getTrainId()).get();
+        int count = 0;
+        int idx = 0;
+        String[] route = train.getRoute().split(",");
+        for(int i=0; i<route.length; i++){
+            if(route[i].equals(seatAvailabilityEntryDto.getToStation()))
+                idx = i;
+        }
 
-       return null;
+        for(Ticket ticket : train.getBookedTickets()){
+                for(int i=0; i<idx; i++){
+                    if(route[i].equals(ticket.getFromStation()))
+                        count += ticket.getPassengersList().size();
+                }
+        }
+
+        int leftTicket = train.getNoOfSeats() - count;
+
+       return leftTicket;
     }
 
     public Integer calculatePeopleBoardingAtAStation(Integer trainId,Station station) throws Exception{
@@ -49,9 +81,25 @@ public class TrainService {
         //if the trainId is not passing through that station
         //throw new Exception("Train is not passing from this station");
         //  in a happy case we need to find out the number of such people.
+        Train train = trainRepository.findById(trainId).get();
+        boolean isPassed = false;
+        String[] route = train.getRoute().split(",");
+        for(int i=0; i<route.length; i++){
+            if(route[i].equals(station)) {
+                isPassed = true;
+                break;
+            }
+        }
 
+        if(!isPassed) throw new Exception("Train is not passing from this station");
 
-        return 0;
+        int countBoardingPeople = 0;
+        for(Ticket ticket : train.getBookedTickets()){
+            if(station.equals(ticket.getFromStation()))
+                countBoardingPeople += ticket.getPassengersList().size();
+        }
+
+        return countBoardingPeople;
     }
 
     public Integer calculateOldestPersonTravelling(Integer trainId){
@@ -59,8 +107,17 @@ public class TrainService {
         //Throughout the journey of the train between any 2 stations
         //We need to find out the age of the oldest person that is travelling the train
         //If there are no people travelling in that train you can return 0
+        Train train = trainRepository.findById(trainId).get();
+        if(train.getBookedTickets().size() ==0) return 0;
 
-        return 0;
+        int oldestAge = 0;
+        for(Ticket ticket : train.getBookedTickets()){
+            for(Passenger passenger : ticket.getPassengersList()){
+                if(oldestAge < passenger.getAge()) oldestAge = passenger.getAge();
+            }
+        }
+
+        return oldestAge;
     }
 
     public List<Integer> trainsBetweenAGivenTime(Station station, LocalTime startTime, LocalTime endTime){
@@ -70,6 +127,7 @@ public class TrainService {
         //You can assume that the date change doesn't need to be done ie the travel will certainly happen with the same date (More details
         //in problem statement)
         //You can also assume the seconds and milli seconds value will be 0 in a LocalTime format.
+
 
         return null;
     }
